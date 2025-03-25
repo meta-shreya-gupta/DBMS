@@ -19,10 +19,11 @@ ON c1.Parent_Category = c2.Cat_id
 ORDER BY Parent_category_title, Cat_Title;
 
 -- Display Id, Title, Parent Category Title of all the leaf Categories (categories which are not parent of any other category)
-SELECT c1.Cat_id , c1.Cat_Title , 
+SELECT c1.Cat_id , c1.Cat_Title , c2.Cat_Title AS Parent_Category_Title 
 FROM Category c1 LEFT JOIN Category c2
-ON c1.Cat_Id = c2.Cat_Id
-WHERE c1.Cat_Id NOT IN
+ON c1.Parent_Category = c2.Cat_Id
+WHERE c1.Cat_Id NOT IN 
+(SELECT DISTINCT Parent_Category FROM category WHERE Parent_Category IS NOT NULL);
 
 -- Display Product Title, Price & Description which falls into particular category Title (i.e. “Mobile”)
 SELECT Product_Title , Price , Description
