@@ -1,3 +1,9 @@
+-- Write SQL scripts for the following:
+-- Create all tables of eCommerce Application: StoreFront covered in Session 1 Assignments. (Write all CREATE commands in a SQL file and run that SQL File).
+-- Write a command to display all the table names present in StoreFront.
+-- Write a command to remove Product table of the StoreFront database.
+-- Create the Product table again.
+
 CREATE DATABASE StoreFront;
 
 USE StoreFront;
@@ -105,7 +111,7 @@ VALUES
 (2 , "Canceled" , '2024-11-14 12:32:32' , 2),
 (3 , "Returned" , '2025-03-11 10:21:12' , 3),
 (4 , "Shipped" , '2025-01-12 01:03:34' , 4),
-(5 , "Shipped" , '2025-02-21 04:07:00' , 5);
+(5 , "Shipped" , '2025-03-21 04:07:00' , 5);
 
 INSERT INTO Order_Item(Item_Id , Order_Id , Prod_Id , Quantity , Price , Status)
 VALUES
