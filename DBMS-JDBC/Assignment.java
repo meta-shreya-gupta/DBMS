@@ -24,44 +24,120 @@ class Order{
     public double getOrderTotal(){
         return order_Total;
     }
-    @Override
-    public String toString(){
-        return "Order_Id : " + order_Id + ", Order_Date : " + order_Date +" , Order_Total : " + order_Total;
+}
+
+class ProductImage{
+    private int productId;
+    private String imageUrl;
+    public ProductImage(int productId , String imageUrl){
+        this.productId = productId;
+        this.imageUrl = imageUrl;
+    }
+    public int getProductId(){
+        return productId;
+    }
+    public String getImageUrl(){
+        return imageUrl;
     }
 }
+class CategoryWithChildCount{
+    private String catTitle;
+    private int childCount;
+    public CategoryWithChildCount(String catTitle , int childCount){
+        this.catTitle = catTitle;
+        this.childCount = childCount;
+    }
+    public String getCategoryTitle(){
+        return catTitle;
+    }
+    public int getChildCount(){
+        return childCount;
+    }
+}
+
 public class Assignment {
-    public static void main(String[] args) throws SQLException {
-        String host = "jdbc:mysql://localhost:3306/";
-        String dbName = "StoreFront2";
-        String mysqlURL = host + dbName;
-        String user = "root";
-        String password = "root";
+    private static final String host = "jdbc:mysql://localhost:3306/";
+    private static final String dbName = "StoreFront2";
+    private static final String mysqlURL = host + dbName;
+    private static final String user = "root";
+    private static final String password = "root";
+
+    public static List<Order> getShippedOrder(int userId){
         List<Order> orders = new ArrayList<>();
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-
-        } catch (ClassNotFoundException cnfe) {
-            System.out.println("Error Loading Driver : " + cnfe);
+        String query = "SELECT Orders.Order_Id , Orders.Order_Date , SUM(Order_Item.Price * Order_Item.Quantity) AS Order_Total FROM Orders JOIN Order_Item ON Orders.Order_Id = Order_Item.Order_Id WHERE Orders.User_Id = ? AND Order_Item.Status = 'SHIPPED' GROUP BY Orders.Order_Date , Orders.Order_Id ORDER BY Orders.Order_Date ASC";
+        try(Connection connection = DriverManager.getConnection(mysqlURL , user , password);
+        PreparedStatement preparedStatement1 = connection.prepareStatement(query);){
+            preparedStatement1.setInt(1,userId);
+            ResultSet rs= preparedStatement1.executeQuery();
+            while(rs.next()) {
+                int orderId = rs.getInt("Order_Id");
+                String orderDate = rs.getString("Order_Date");
+                double orderTotal = rs.getDouble("Order_Total");
+                orders.add(new Order(orderId , orderDate , orderTotal));
+            }
         }
-        try{
-            Connection connection = DriverManager.getConnection(mysqlURL, user, password);
-            PreparedStatement prepareStatement = connection.prepareStatement("SELECT Orders.Order_Id , Orders.Order_Date , SUM(Order_Item.Price * Order_Item.Quantity) AS OrderTotal FROM Orders JOIN Order_Item ON Orders.Order_Id = Order_Item.Order_Id WHERE Orders.User_Id = ? AND Order_Item.status = 'SHIPPED' GROUP BY Orders.Order_Id ORDER BY Orders.Order_Date ASC;");
-            prepareStatement.setString(1, "4");
-            ResultSet resObj = prepareStatement.executeQuery();
-            while(resObj.next()) {
-                int order_Id = resObj.getInt("Order_Id");
-                String order_Date = resObj.getString("Order_Date");
-                double order_Total = resObj.getDouble("Order_Total");
-                Order order = new Order(order_Id , order_Date , order_Total);
-                orders.add(order);
-
+        catch(SQLException e){
+            e.printStackTrace();
+        }
+        return orders;
+    }
+    public static int[] insertImages(List<ProductImage> images){
+        String query = "INSERT INTO Images(Prod_Id , Image_Url) VALUES (? , ?)";
+        try(Connection connection = DriverManager.getConnection(mysqlURL , user , password);
+        PreparedStatement preparedStatement2 = connection.prepareStatement(query)){
+            for(ProductImage image : images){
+                preparedStatement2.setInt(1 , image.getProductId());
+                preparedStatement2.setString(2 , image.getImageUrl());
+                preparedStatement2.addBatch();
+            }
+        return preparedStatement2.executeBatch();
+        }catch(SQLException e){
+            e.printStackTrace();
+            return new int[0];
+        }
+    }
+    public static int deleteProducts(){
+        String query = "DELETE FROM Product WHERE Prod_Id NOT IN (SELECT DISTINCT Order_Item.Prod_Id FROM Order_Item JOIN Orders ON Order_Item.Order_Id = Orders.Order_Id WHERE Orders.Order_Date >= NOW() - INTERVAL 1 YEAR)";
+        try(Connection connection = DriverManager.getConnection(mysqlURL , user , password);
+        PreparedStatement preparedStatement3 = connection.prepareStatement(query);){
+            return preparedStatement3.executeUpdate(query);
+        }catch(SQLException e){
+            e.printStackTrace();
+            return 0;
+        }
+    }
+    public static List<CategoryWithChildCount> getTopParentCategory(){
+        List<CategoryWithChildCount> categories = new ArrayList<>();
+        String query = "SELECT c1.Cat_Title , COUNT(c2.Cat_Id) AS Child_Count FROM Category c1 LEFT JOIN Category c2 ON c1.Cat_Id = c2.Parent_Category WHERE c1.Parent_Category IS NULL GROUP BY c1.Cat_Id , c1.Cat_Title ORDER BY c1.Cat_Title ASC";
+        try(Connection connection = DriverManager.getConnection(mysqlURL, user, password);
+        PreparedStatement preparedStatement4 = connection.prepareStatement(query);
+        ResultSet rs = preparedStatement4.executeQuery(query);){
+            while(rs.next()){
+                String Cat_Title = rs.getString("Cat_Title");
+                int count = rs.getInt("Child_Count");
+                categories.add(new CategoryWithChildCount(Cat_Title, count));
             }
         }catch(SQLException e){
             e.printStackTrace();
         }
-        for(Order order : orders){
-            System.out.println(order);
-        }
+        return categories;
+    }
+    public static void main(String[] args) throws SQLException {
+        List<Order> orders = getShippedOrder(4);
+        System.out.println("Shipped orders for user 4");
+        orders.forEach(System.out::println);
 
+        List<ProductImage> images = new ArrayList<>();
+        images.add(new ProductImage(1, "images1.jpg"));
+        images.add(new ProductImage(2, "images2.jpg"));
+        int[] results = insertImages(images);
+        System.out.println("Inserted " + results.length +" images");
+
+        int deletedCount = deleteProducts();
+        System.out.println("Deleted " + deletedCount +" products");
+
+        List<CategoryWithChildCount> categories = getTopParentCategory();
+        System.out.println("Top Parent Categories ");
+        categories.forEach(System.out::println);
     }
 }
