@@ -24,6 +24,10 @@ class Order{
     public double getOrderTotal(){
         return order_Total;
     }
+    @Override
+    public String toString(){
+        return String.format("ID = %d , Date = %s , Total = %.2f" , order_Id , order_Date , order_Total);
+    }
 }
 
 class ProductImage{
@@ -39,6 +43,10 @@ class ProductImage{
     public String getImageUrl(){
         return imageUrl;
     }
+    @Override
+    public String toString(){
+        return String.format("Product_Id = %d , URL =%s" , productId , imageUrl);
+    }
 }
 class CategoryWithChildCount{
     private String catTitle;
@@ -52,6 +60,10 @@ class CategoryWithChildCount{
     }
     public int getChildCount(){
         return childCount;
+    }
+    @Override
+    public String toString(){
+        return String.format("Cat_Title = %s , Cildren = %d" , catTitle , childCount);
     }
 }
 
